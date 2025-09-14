@@ -3,16 +3,21 @@ import 'dart:io';
 class ApiConfig {
   // Tự động phát hiện platform và cấu hình URL phù hợp
   static String get baseUrl {
-    if (Platform.isAndroid) {
-      // Android emulator sử dụng 10.0.2.2 để truy cập localhost
-      return 'http://10.0.2.2:8000/api/v1';
-    } else if (Platform.isIOS) {
-      // iOS simulator sử dụng localhost
-      return 'http://127.0.0.1:8000/api/v1';
-    } else {
-      // Desktop/Web sử dụng localhost
-      return 'http://127.0.0.1:8000/api/v1';
-    }
+    // Force sử dụng IP thật cho tất cả platform để test
+    return 'http://192.168.1.83:8000/api/v1';
+    
+    // if (Platform.isAndroid) {
+    //   // Android emulator sử dụng 10.0.2.2 để truy cập localhost
+    //   // Android device thật sử dụng IP thật của máy tính
+    //   return 'http://192.168.1.83:8000/api/v1';
+    // } else if (Platform.isIOS) {
+    //   // iOS simulator sử dụng localhost
+    //   // iOS device thật sử dụng IP thật của máy tính
+    //   return 'http://192.168.1.83:8000/api/v1';
+    // } else {
+    //   // Desktop/Web sử dụng localhost
+    //   return 'http://127.0.0.1:8000/api/v1';
+    // }
   }
   
   // Fallback URLs nếu cần
@@ -36,6 +41,8 @@ class ApiConfig {
   static void logRequest(String method, String url, Map<String, dynamic>? data) {
     if (debugMode) {
       print('🌐 API Request: $method $url');
+      print('🔍 Platform: ${Platform.isAndroid ? "Android" : Platform.isIOS ? "iOS" : "Other"}');
+      print('🔍 Base URL: $baseUrl');
       if (data != null) {
         print('📤 Data: $data');
       }

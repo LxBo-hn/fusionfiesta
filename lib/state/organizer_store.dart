@@ -165,7 +165,7 @@ class OrganizerStore extends ChangeNotifier {
 			error.value = null;
 			
 			final response = await _apiService.checkIn(eventId, checkinCode);
-			if (response['checked_in_at'] != null) {
+			if (response['success'] == true) {
 				// Add to local list
 				final list = List<String>.from(attendance.value)..add(checkinCode);
 				attendance.value = list;

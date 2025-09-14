@@ -8,6 +8,8 @@ import '../../events/registration_qr_screen.dart';
 import '../../organizer/registrants_screen.dart';
 import '../../organizer/create_event_screen.dart';
 import '../../organizer/edit_event_screen.dart';
+import '../../organizer/qr_scanner_screen.dart';
+import '../../organizer/qr_generator_screen.dart';
 import '../../auth/role_selection_screen.dart';
 import '../../../main.dart';
 
@@ -306,10 +308,11 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.pushNamed(
                         context,
-                        RegistrationQRScreen.routeName,
+                        QRScannerScreen.routeName,
+                        arguments: {'event': event},
                       ),
-                      icon: const Icon(Icons.qr_code, size: 16),
-                      label: const Text('Mã QR'),
+                      icon: const Icon(Icons.qr_code_scanner, size: 16),
+                      label: const Text('Quét QR'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6C63FF),
                         side: const BorderSide(color: Color(0xFF6C63FF)),
@@ -326,20 +329,349 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
   }
 
   Widget _buildAttendanceTab() {
-    return const Center(
+    return Consumer<OrganizerStore>(
+      builder: (context, store, child) {
+        return ValueListenableBuilder<List<String>>(
+          valueListenable: store.attendance,
+          builder: (context, attendance, child) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: store.isLoading,
+              builder: (context, isLoading, child) {
+                return ValueListenableBuilder<String?>(
+                  valueListenable: store.error,
+                  builder: (context, error, child) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Quản lý tham dự',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      // Load attendance for all events
+                                      for (final event in store.events.value) {
+                                        store.loadAttendance(event.id);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.refresh, size: 18),
+                                    label: const Text('Làm mới'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.grey[600],
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      // Show QR Generator
+                                      Navigator.pushNamed(
+                                        context,
+                                        QRGeneratorScreen.routeName,
+                                        arguments: {'event': store.events.value.isNotEmpty 
+                                          ? store.events.value.first 
+                                          : null},
+                                      );
+                                    },
+                                    icon: const Icon(Icons.qr_code, size: 18),
+                                    label: const Text('Tạo QR'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF6C63FF),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Error display
+                          if (error != null)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red[200]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error, color: Colors.red[700]),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      error,
+                                      style: TextStyle(color: Colors.red[700]),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          
+                          if (error != null) const SizedBox(height: 16),
+                          
+                          // Loading indicator
+                          if (isLoading)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(32),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          else
+                            // Events list with attendance
+                            Expanded(
+                              child: store.events.value.isEmpty
+                                  ? const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people, size: 64, color: Colors.grey),
+                                          Icon(Icons.event_note, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'Quản lý tham dự',
+                                            'Chưa có sự kiện nào',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
-          SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: store.events.value.length,
+                                      itemBuilder: (context, index) {
+                                        final event = store.events.value[index];
+                                        return _buildEventAttendanceCard(event, store);
+                                      },
+                                    ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEventAttendanceCard(EventModel event, OrganizerStore store) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        event.dateText,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'scan':
+                        Navigator.pushNamed(
+                          context,
+                          QRScannerScreen.routeName,
+                          arguments: {'event': event},
+                        );
+                        break;
+                      case 'generate':
+                        Navigator.pushNamed(
+                          context,
+                          QRGeneratorScreen.routeName,
+                          arguments: {'event': event},
+                        );
+                        break;
+                      case 'load':
+                        store.loadAttendance(event.id);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'scan',
+                      child: Row(
+                        children: [
+                          Icon(Icons.qr_code_scanner, size: 18),
+                          SizedBox(width: 8),
+                          Text('Quét QR'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'generate',
+                      child: Row(
+                        children: [
+                          Icon(Icons.qr_code, size: 18),
+                          SizedBox(width: 8),
+                          Text('Tạo QR'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'load',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Tải lại'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: const Icon(Icons.more_vert),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Attendance stats
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Đã check-in',
+                    '${store.attendance.value.length}',
+                    Icons.check_circle,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Tổng đăng ký',
+                    '${event.currentAttendees ?? 0}',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Còn lại',
+                    '${(event.maxAttendees ?? 0) - (event.currentAttendees ?? 0)}',
+                    Icons.event_available,
+                    Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        QRScannerScreen.routeName,
+                        arguments: {'event': event},
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner, size: 16),
+                    label: const Text('Quét QR'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6C63FF),
+                      side: const BorderSide(color: Color(0xFF6C63FF)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        QRGeneratorScreen.routeName,
+                        arguments: {'event': event},
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code, size: 16),
+                    label: const Text('Tạo QR'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF6C63FF),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
           Text(
-            'Theo dõi tham dự sự kiện tại đây',
-            style: TextStyle(color: Colors.grey),
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -541,8 +873,8 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
               // Use global navigator key to ensure navigation works
               FusionFiestaApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
                 RoleSelectionScreen.routeName,
-                (route) => false,
-              );
+                  (route) => false,
+                );
             },
             child: const Text('Đăng xuất'),
           ),

@@ -11,6 +11,7 @@ import '../../../main.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:flutter/services.dart';
 import 'profile_components.dart';
+import '../../organizer/qr_scanner_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
 	static const String routeName = '/student';
@@ -27,6 +28,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 		EventsListScreen(),
 		_MyRegistrationsTab(),
 		_CertificatesTab(),
+		_QRScannerTab(),
 		_ProfileTab(),
 	];
 
@@ -46,6 +48,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 					NavigationDestination(icon: Icon(Icons.event), label: 'Sự kiện'),
 					NavigationDestination(icon: Icon(Icons.fact_check), label: 'Đăng ký'),
 					NavigationDestination(icon: Icon(Icons.card_membership), label: 'Chứng chỉ'),
+					NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Quét QR'),
 					NavigationDestination(icon: Icon(Icons.person), label: 'Hồ sơ'),
 				],
 			),
@@ -642,6 +645,118 @@ class _ProfileTab extends StatelessWidget {
 							);
 						},
 						child: const Text('Đăng xuất'),
+					),
+				],
+			),
+		);
+	}
+}
+
+class _QRScannerTab extends StatelessWidget {
+	const _QRScannerTab();
+
+	@override
+	Widget build(BuildContext context) {
+		return Scaffold(
+			body: Center(
+				child: Column(
+					mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						Icon(
+							Icons.qr_code_scanner,
+							size: 80,
+							color: Theme.of(context).colorScheme.primary,
+						),
+						const SizedBox(height: 24),
+						Text(
+							'Quét QR Check-in',
+							style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+								fontWeight: FontWeight.bold,
+							),
+						),
+						const SizedBox(height: 16),
+						Text(
+							'Quét mã QR để check-in vào sự kiện',
+							style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+								color: Colors.grey[600],
+							),
+							textAlign: TextAlign.center,
+						),
+						const SizedBox(height: 32),
+						FilledButton.icon(
+							onPressed: () {
+								// Mở QR Scanner
+								Navigator.push(
+									context,
+									MaterialPageRoute(
+										builder: (context) => const QRScannerScreen(
+											event: null, // Student có thể quét bất kỳ event nào
+										),
+									),
+								);
+							},
+							icon: const Icon(Icons.qr_code_scanner),
+							label: const Text('Bắt đầu quét QR'),
+							style: FilledButton.styleFrom(
+								backgroundColor: Theme.of(context).colorScheme.primary,
+								padding: const EdgeInsets.symmetric(
+									horizontal: 32,
+									vertical: 16,
+								),
+							),
+						),
+						const SizedBox(height: 16),
+						OutlinedButton.icon(
+							onPressed: () {
+								// Hướng dẫn sử dụng
+								_showQRInstructions(context);
+							},
+							icon: const Icon(Icons.help_outline),
+							label: const Text('Hướng dẫn'),
+							style: OutlinedButton.styleFrom(
+								foregroundColor: Theme.of(context).colorScheme.primary,
+								side: BorderSide(
+									color: Theme.of(context).colorScheme.primary,
+								),
+								padding: const EdgeInsets.symmetric(
+									horizontal: 32,
+									vertical: 16,
+								),
+							),
+						),
+					],
+				),
+			),
+		);
+	}
+
+	void _showQRInstructions(BuildContext context) {
+		showDialog(
+			context: context,
+			builder: (context) => AlertDialog(
+				title: const Text('Hướng dẫn quét QR'),
+				content: const Column(
+					mainAxisSize: MainAxisSize.min,
+					crossAxisAlignment: CrossAxisAlignment.start,
+					children: [
+						Text('1. Nhấn "Bắt đầu quét QR"'),
+						Text('2. Hướng camera về phía mã QR'),
+						Text('3. Đợi app tự động nhận diện'),
+						Text('4. Xác nhận check-in thành công'),
+						SizedBox(height: 16),
+						Text(
+							'Lưu ý: Chỉ có thể check-in trong thời gian sự kiện diễn ra.',
+							style: TextStyle(
+								fontWeight: FontWeight.bold,
+								color: Colors.orange,
+							),
+						),
+					],
+				),
+				actions: [
+					TextButton(
+						onPressed: () => Navigator.pop(context),
+						child: const Text('Đóng'),
 					),
 				],
 			),
