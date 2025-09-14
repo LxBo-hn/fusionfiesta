@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../state/organizer_store.dart';
 import '../../../models/event.dart';
+import '../../../services/auth_service.dart';
 import '../../events/event_detail_screen.dart';
 import '../../events/registration_qr_screen.dart';
 import '../../organizer/registrants_screen.dart';
+import '../../organizer/create_event_screen.dart';
+import '../../organizer/edit_event_screen.dart';
+import '../../auth/role_selection_screen.dart';
+import '../../../main.dart';
 
 class OrganizerDashboard extends StatefulWidget {
   static const String routeName = '/organizer';
@@ -31,8 +36,9 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
-          'Organizer Dashboard',
+          'Người tổ chức',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -62,6 +68,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           _buildAttendanceTab(),
           _buildMediaTab(),
           _buildAnalyticsTab(),
+          _buildProfileTab(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -73,11 +80,11 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.event),
-            label: 'Events',
+            label: 'Sự kiện',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
-            label: 'Attendance',
+            label: 'Tham dự',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.photo_library),
@@ -85,13 +92,20 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
-            label: 'Analytics',
+            label: 'Thống kê',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Hồ sơ',
           ),
         ],
       ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
-              onPressed: () => _showCreateEventDialog(context),
+              onPressed: () => Navigator.pushNamed(
+                context,
+                CreateEventScreen.routeName,
+              ),
               backgroundColor: const Color(0xFF6C63FF),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -118,14 +132,14 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                 const Icon(Icons.error_outline, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
                 Text(
-                  'Error: ${organizerStore.error.value}',
+                  'Lỗi: ${organizerStore.error.value}',
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => organizerStore.loadEvents(),
-                  child: const Text('Retry'),
+                  child: const Text('Thử lại'),
                 ),
               ],
             ),
@@ -156,12 +170,12 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           Icon(Icons.event_note, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'No events yet',
+            'Chưa có sự kiện nào',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           SizedBox(height: 8),
           Text(
-            'Create your first event to get started',
+            'Tạo sự kiện đầu tiên để bắt đầu',
             style: TextStyle(color: Colors.grey),
           ),
         ],
@@ -231,7 +245,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                           children: [
                             Icon(Icons.edit, size: 20),
                             SizedBox(width: 8),
-                            Text('Edit'),
+                            Text('Chỉnh sửa'),
                           ],
                         ),
                       ),
@@ -241,7 +255,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                           children: [
                             Icon(Icons.qr_code, size: 20),
                             SizedBox(width: 8),
-                            Text('QR Code'),
+                            Text('Mã QR'),
                           ],
                         ),
                       ),
@@ -251,7 +265,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                           children: [
                             Icon(Icons.people, size: 20),
                             SizedBox(width: 8),
-                            Text('Registrants'),
+                            Text('Người đăng ký'),
                           ],
                         ),
                       ),
@@ -261,7 +275,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                           children: [
                             Icon(Icons.delete, size: 20, color: Colors.red),
                             SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: Colors.red)),
+                            Text('Xóa', style: TextStyle(color: Colors.red)),
                           ],
                         ),
                       ),
@@ -280,7 +294,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                         arguments: {'event': event},
                       ),
                       icon: const Icon(Icons.people, size: 16),
-                      label: const Text('View Registrants'),
+                      label: const Text('Xem đăng ký'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6C63FF),
                         side: const BorderSide(color: Color(0xFF6C63FF)),
@@ -295,7 +309,7 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
                         RegistrationQRScreen.routeName,
                       ),
                       icon: const Icon(Icons.qr_code, size: 16),
-                      label: const Text('QR Code'),
+                      label: const Text('Mã QR'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6C63FF),
                         side: const BorderSide(color: Color(0xFF6C63FF)),
@@ -319,12 +333,12 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           Icon(Icons.people, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'Attendance Management',
+            'Quản lý tham dự',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           SizedBox(height: 8),
           Text(
-            'Track event attendance here',
+            'Theo dõi tham dự sự kiện tại đây',
             style: TextStyle(color: Colors.grey),
           ),
         ],
@@ -340,12 +354,12 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           Icon(Icons.photo_library, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'Media Gallery',
+            'Thư viện Media',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           SizedBox(height: 8),
           Text(
-            'Manage event media here',
+            'Quản lý media sự kiện tại đây',
             style: TextStyle(color: Colors.grey),
           ),
         ],
@@ -361,13 +375,94 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           Icon(Icons.analytics, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'Analytics',
+            'Thống kê',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           SizedBox(height: 8),
           Text(
-            'View event analytics here',
+            'Xem thống kê sự kiện tại đây',
             style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Profile Header
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: const Color(0xFF6C63FF),
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Người tổ chức',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Quản lý sự kiện của bạn',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Profile Options
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.edit, color: Color(0xFF6C63FF)),
+                  title: const Text('Chỉnh sửa hồ sơ'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    // Handle edit profile
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.lock, color: Color(0xFF6C63FF)),
+                  title: const Text('Đổi mật khẩu'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    // Handle change password
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                  onTap: () => _showLogoutDialog(context),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -377,7 +472,11 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
   void _handleEventAction(String action, EventModel event) {
     switch (action) {
       case 'edit':
-        _showEditEventDialog(context, event);
+        Navigator.pushNamed(
+          context,
+          EditEventScreen.routeName,
+          arguments: {'event': event},
+        );
         break;
       case 'qr':
         Navigator.pushNamed(context, RegistrationQRScreen.routeName);
@@ -395,62 +494,18 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
     }
   }
 
-  void _showCreateEventDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Event'),
-        content: const Text('Event creation form will be implemented here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement event creation
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _showEditEventDialog(BuildContext context, EventModel event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Event'),
-        content: Text('Edit form for ${event.title} will be implemented here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement event editing
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showDeleteConfirmation(BuildContext context, EventModel event) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${event.title}"?'),
+        title: const Text('Xóa sự kiện'),
+        content: Text('Bạn có chắc chắn muốn xóa "${event.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -458,7 +513,38 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đăng xuất'),
+        content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              print('🔄 Starting logout process...');
+              await AuthService.instance.logout();
+              print('✅ Logout completed, navigating to role selection...');
+              
+              // Use global navigator key to ensure navigation works
+              FusionFiestaApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                RoleSelectionScreen.routeName,
+                (route) => false,
+              );
+            },
+            child: const Text('Đăng xuất'),
           ),
         ],
       ),

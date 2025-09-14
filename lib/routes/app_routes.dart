@@ -15,11 +15,13 @@ import '../screens/events/feedback_screen.dart';
 import '../screens/media/media_gallery_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/organizer/registrants_screen.dart';
+import '../screens/organizer/create_event_screen.dart';
+import '../screens/organizer/edit_event_screen.dart';
+import '../models/api_event.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/registrations/my_registrations_screen.dart';
 import '../screens/dashboards/student/student_dashboard.dart';
 import '../screens/dashboards/organizer/organizer_dashboard.dart';
-import '../screens/dashboards/admin/admin_dashboard.dart';
 
 class AppRoutes {
 	static Map<String, WidgetBuilder> get routes => {
@@ -77,6 +79,16 @@ class AppRoutes {
 		MyRegistrationsScreen.routeName: (_) => const MyRegistrationsScreen(),
 		StudentDashboard.routeName: (_) => const StudentDashboard(),
 		OrganizerDashboard.routeName: (_) => const OrganizerDashboard(),
-		AdminDashboard.routeName: (_) => const AdminDashboard(),
+		CreateEventScreen.routeName: (_) => const CreateEventScreen(),
+		EditEventScreen.routeName: (context) {
+			final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+			final event = args?['event'] as ApiEventModel?;
+			if (event == null) {
+				return const Scaffold(
+					body: Center(child: Text('Event not found')),
+				);
+			}
+			return EditEventScreen(event: event);
+		},
 	};
 }

@@ -67,22 +67,33 @@ class ApiEventModel {
   Map<String, dynamic> toEventModelJson() {
     return {
       'id': id.toString(),
-      'title': title ?? 'Untitled Event',
+      'title': title,
       'description': description ?? 'No description available',
-      'dateText': _formatDate(startAt) ?? 'Date TBD',
+      'dateText': _formatDate(startAt),
       // Use banner_url from API if available; fallback to local placeholder
       'imageAsset': (bannerUrl != null && bannerUrl!.isNotEmpty)
           ? bannerUrl!
           : 'assets/splash/onboarding_1.png',
-      'status': status ?? 'published',
+      'status': status,
       'organizerId': organizerId.toString(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'maxAttendees': capacity,
       'currentAttendees': capacity - seatsLeft,
       'location': venue ?? 'Location TBD',
-      'category': (category != null && category is Map) ? category['name'] ?? 'General' : 'General',
+      'category': _getCategoryName(),
     };
+  }
+
+  String _getCategoryName() {
+    if (category == null) return 'General';
+    if (category is Map<String, dynamic>) {
+      return category['name']?.toString() ?? 'General';
+    }
+    if (category is String) {
+      return category;
+    }
+    return 'General';
   }
 
   String _formatDate(DateTime date) {

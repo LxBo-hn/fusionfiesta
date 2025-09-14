@@ -4,7 +4,10 @@ import '../../../state/certificates_store.dart';
 import '../../../models/certificate.dart';
 import '../../../services/profile_service.dart';
 import '../../../services/registration_service.dart';
+import '../../../services/auth_service.dart';
 import '../../events/registration_qr_screen.dart';
+import '../../auth/role_selection_screen.dart';
+import '../../../main.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:flutter/services.dart';
 import 'profile_components.dart';
@@ -30,6 +33,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
 	@override
 	Widget build(BuildContext context) {
 		return Scaffold(
+			appBar: AppBar(
+				automaticallyImplyLeading: false,
+				backgroundColor: Theme.of(context).colorScheme.primary,
+				foregroundColor: Colors.white,
+			),
 			body: _tabs[_index],
 			bottomNavigationBar: NavigationBar(
 				selectedIndex: _index,
@@ -43,6 +51,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 			),
 		);
 	}
+
 }
 
 class _MyRegistrationsTab extends StatelessWidget {
@@ -447,22 +456,6 @@ class _ProfileTab extends StatelessWidget {
 														color: Theme.of(context).colorScheme.onSurfaceVariant,
 													),
 												),
-												const SizedBox(height: 8),
-												Container(
-													padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-													decoration: BoxDecoration(
-														color: getRoleColor(profile.role).withOpacity(0.1),
-														borderRadius: BorderRadius.circular(16),
-													),
-													child: Text(
-														(profile.role ?? 'student').toUpperCase(),
-														style: TextStyle(
-															color: getRoleColor(profile.role),
-															fontWeight: FontWeight.w600,
-															fontSize: 12,
-														),
-													),
-												),
 											],
 										),
 									),
@@ -549,7 +542,7 @@ class _ProfileTab extends StatelessWidget {
 												label: 'Email',
 												value: profile.isEmailVerified ? 'Đã xác thực' : 'Chưa xác thực',
 												trailing: profile.isEmailVerified 
-													? Icon(Icons.check_circle, color: Colors.green)
+													? null
 													: IconButton(
 														icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
 														onPressed: () {
@@ -590,12 +583,7 @@ class _ProfileTab extends StatelessWidget {
 										const SizedBox(width: 12),
 										Expanded(
 											child: FilledButton.icon(
-												onPressed: () {
-													// TODO: Logout
-													ScaffoldMessenger.of(context).showSnackBar(
-														const SnackBar(content: Text('Tính năng đăng xuất đang phát triển')),
-													);
-												},
+												onPressed: () => _showProfileLogoutDialog(context),
 												icon: const Icon(Icons.logout),
 												label: const Text('Đăng xuất'),
 											),
@@ -607,6 +595,37 @@ class _ProfileTab extends StatelessWidget {
 						),
 					);
 				},
+			),
+		);
+	}
+
+	void _showProfileLogoutDialog(BuildContext context) {
+		showDialog(
+			context: context,
+			builder: (context) => AlertDialog(
+				title: const Text('Đăng xuất'),
+				content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+				actions: [
+					TextButton(
+						onPressed: () => Navigator.pop(context),
+						child: const Text('Hủy'),
+					),
+					FilledButton(
+						onPressed: () async {
+							Navigator.pop(context);
+							print('🔄 Starting logout process...');
+							await AuthService.instance.logout();
+							print('✅ Logout completed, navigating to role selection...');
+							
+							// Use global navigator key to ensure navigation works
+							FusionFiestaApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+								RoleSelectionScreen.routeName,
+								(route) => false,
+							);
+						},
+						child: const Text('Đăng xuất'),
+					),
+				],
 			),
 		);
 	}

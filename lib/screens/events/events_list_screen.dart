@@ -27,7 +27,7 @@ class _EventsListScreenState extends State<EventsListScreen> {
 		final Color primary = Theme.of(context).colorScheme.primary;
 		return Scaffold(
 			appBar: AppBar(
-				leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).maybePop()),
+				automaticallyImplyLeading: false,
 				title: const Text('All Events'),
 				actions: const [
 					Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: CircleAvatar(radius: 14, child: Icon(Icons.notifications, size: 16))),

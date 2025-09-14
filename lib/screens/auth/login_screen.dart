@@ -52,9 +52,9 @@ class _LoginScreenState extends State<LoginScreen> {
           case AppRole.organizer:
             Navigator.of(context).pushReplacementNamed('/organizer');
             break;
-          case AppRole.admin:
-            Navigator.of(context).pushReplacementNamed('/admin');
-            break;
+          // case AppRole.admin:
+          //   Navigator.of(context).pushReplacementNamed('/admin');
+          //   break;
         }
       } else {
         // Login failed
@@ -77,13 +77,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _goBack() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      Navigator.of(context).pushReplacementNamed(RoleSelectionScreen.routeName);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,10 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F0F0),
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back),
-        ),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black87,
         elevation: 0,

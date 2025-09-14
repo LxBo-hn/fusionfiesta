@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 
-enum AppRole { student, organizer, admin }
+enum AppRole { student, organizer }
 
 class RoleSelectionScreen extends StatelessWidget {
 	static const String routeName = '/role';
@@ -30,12 +30,6 @@ class RoleSelectionScreen extends StatelessWidget {
 							title: 'Người tổ chức',
 							subtitle: 'Tạo và quản lý sự kiện',
 							onTap: () => _goToLogin(context, AppRole.organizer),
-						),
-						_OptionCard(
-							icon: Icons.admin_panel_settings,
-							title: 'Quản trị viên',
-							subtitle: 'Phê duyệt & giám sát',
-							onTap: () => _goToLogin(context, AppRole.admin),
 						),
 					],
 				),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'role_selection_screen.dart';
 import '../../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -33,13 +32,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 		super.dispose();
 	}
 
-	void _goBack() {
-		if (Navigator.of(context).canPop()) {
-			Navigator.of(context).pop();
-		} else {
-			Navigator.of(context).pushReplacementNamed(RoleSelectionScreen.routeName);
-		}
-	}
 
 	void _submit() async {
 		if (!_formKey.currentState!.validate() || !_agree) return;
@@ -91,7 +83,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 		return Scaffold(
 			backgroundColor: const Color(0xFFF0F0F0),
 			appBar: AppBar(
-				leading: IconButton(onPressed: _goBack, icon: const Icon(Icons.arrow_back)),
 				backgroundColor: Colors.transparent,
 				foregroundColor: Colors.black87,
 				elevation: 0,

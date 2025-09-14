@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'routes/app_routes.dart';
 import 'screens/splash/splash_screen.dart';
@@ -15,11 +16,16 @@ import 'services/profile_service.dart';
 import 'services/registration_service.dart';
 
 void main() {
+	WidgetsFlutterBinding.ensureInitialized();
+	SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 	runApp(const FusionFiestaApp());
 }
 
 class FusionFiestaApp extends StatelessWidget {
 	const FusionFiestaApp({super.key});
+
+	// Global navigator key for logout navigation
+	static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 	@override
 	Widget build(BuildContext context) {
@@ -44,6 +50,7 @@ class FusionFiestaApp extends StatelessWidget {
 				ChangeNotifierProvider(create: (_) => RegistrationService.instance),
 			],
 			child: MaterialApp(
+				navigatorKey: navigatorKey,
 				title: 'FusionFiesta',
 				debugShowCheckedModeBanner: false,
 				theme: theme,

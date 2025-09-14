@@ -30,10 +30,22 @@ class OrganizerStore extends ChangeNotifier {
 			if (response['data'] != null) {
 				final List<dynamic> eventsData = response['data'] ?? [];
 				print('📊 Events data: $eventsData');
-				events.value = eventsData
-					.map((json) => ApiEventModel.fromJson(json))
-					.map((apiEvent) => EventModel.fromJson(apiEvent.toEventModelJson()))
-					.toList();
+				
+				final List<EventModel> eventList = [];
+				for (final json in eventsData) {
+					try {
+						final apiEvent = ApiEventModel.fromJson(json);
+						final eventModel = EventModel.fromJson(apiEvent.toEventModelJson());
+						eventList.add(eventModel);
+					} catch (e) {
+						print('⚠️ Error parsing event: $e');
+						print('⚠️ Event data: $json');
+						// Skip this event and continue with others
+						continue;
+					}
+				}
+				
+				events.value = eventList;
 				print('✅ Loaded ${events.value.length} events from API');
 			} else {
 				error.value = response['message'] ?? 'Failed to load events';
