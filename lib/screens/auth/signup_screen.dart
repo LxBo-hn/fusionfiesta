@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'role_selection_screen.dart';
+import '../../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
 	static const String routeName = '/signup';
@@ -41,10 +43,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 	void _submit() async {
 		if (!_formKey.currentState!.validate() || !_agree) return;
+		
 		setState(() => _isLoading = true);
-		await Future.delayed(const Duration(milliseconds: 600));
-		setState(() => _isLoading = false);
-		Navigator.of(context).pop();
+		
+		try {
+			final authService = Provider.of<AuthService>(context, listen: false);
+			final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}';
+			final result = await authService.register(
+				fullName,
+				_emailController.text.trim(),
+				_passwordController.text,
+			);
+			
+			if (result['success']) {
+				// Registration successful
+				ScaffoldMessenger.of(context).showSnackBar(
+					const SnackBar(
+						content: Text('Registration successful! Please check your email to verify your account.'),
+						backgroundColor: Colors.green,
+					),
+				);
+				Navigator.of(context).pop();
+			} else {
+				// Registration failed
+				ScaffoldMessenger.of(context).showSnackBar(
+					SnackBar(
+						content: Text(result['message'] ?? 'Registration failed'),
+						backgroundColor: Colors.red,
+					),
+				);
+			}
+		} catch (e) {
+			ScaffoldMessenger.of(context).showSnackBar(
+				SnackBar(
+					content: Text('Error: $e'),
+					backgroundColor: Colors.red,
+				),
+			);
+		} finally {
+			setState(() => _isLoading = false);
+		}
 	}
 
 	@override

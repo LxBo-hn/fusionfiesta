@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../state/admin_store.dart';
+import '../../../models/user.dart';
 
 class AdminDashboard extends StatefulWidget {
   static const String routeName = '/admin';
@@ -526,7 +527,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildUsersTab() {
-    return ValueListenableBuilder<List<AdminUserItem>>(
+    return ValueListenableBuilder<List<UserModel>>(
       valueListenable: _store.users,
       builder: (context, users, child) {
         return Padding(
@@ -578,7 +579,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildUserStats(List<AdminUserItem> users) {
+  Widget _buildUserStats(List<UserModel> users) {
     final studentCount = users.where((u) => u.role == 'student').length;
     final organizerCount = users.where((u) => u.role == 'organizer').length;
     final adminCount = users.where((u) => u.role == 'admin').length;
@@ -631,7 +632,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildUserCard(AdminUserItem user) {
+  Widget _buildUserCard(UserModel user) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
@@ -802,7 +803,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  void _handleUserAction(String action, AdminUserItem user) {
+  void _handleUserAction(String action, UserModel user) {
     switch (action) {
       case 'edit':
         _showEditUserDialog(context, user);
@@ -836,7 +837,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  void _showEditUserDialog(BuildContext context, AdminUserItem user) {
+  void _showEditUserDialog(BuildContext context, UserModel user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -859,7 +860,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  void _showDeleteUserConfirmation(BuildContext context, AdminUserItem user) {
+  void _showDeleteUserConfirmation(BuildContext context, UserModel user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

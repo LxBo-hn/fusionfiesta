@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'role_selection_screen.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../dashboards/student/student_dashboard.dart';
-import '../dashboards/organizer/organizer_dashboard.dart';
-import '../dashboards/admin/admin_dashboard.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
@@ -32,22 +32,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _isLoading = false);
-    final role =
-        ModalRoute.of(context)!.settings.arguments as AppRole? ??
-        AppRole.student;
-    switch (role) {
-      case AppRole.student:
-        Navigator.of(context).pushReplacementNamed(StudentDashboard.routeName);
-        break;
-      case AppRole.organizer:
-        Navigator.of(context).pushReplacementNamed('/organizer');
-        break;
-      case AppRole.admin:
-        Navigator.of(context).pushReplacementNamed('/admin');
-        break;
+    
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final result = await authService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+      
+      if (result['success']) {
+        // Login successful
+        final role = ModalRoute.of(context)!.settings.arguments as AppRole? ?? AppRole.student;
+        switch (role) {
+          case AppRole.student:
+            Navigator.of(context).pushReplacementNamed(StudentDashboard.routeName);
+            break;
+          case AppRole.organizer:
+            Navigator.of(context).pushReplacementNamed('/organizer');
+            break;
+          case AppRole.admin:
+            Navigator.of(context).pushReplacementNamed('/admin');
+            break;
+        }
+      } else {
+        // Login failed
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 

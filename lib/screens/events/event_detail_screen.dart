@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/event.dart';
-import '../../state/registration_store.dart';
+import '../../models/registration.dart';
+import '../../services/registration_service.dart';
 import 'registration_qr_screen.dart';
 
 class EventDetailScreen extends StatelessWidget {
@@ -41,6 +42,8 @@ class EventDetailScreen extends StatelessWidget {
 									Text(event.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
 									const SizedBox(height: 8),
 									Text(event.description, style: const TextStyle(color: Colors.white70, height: 1.4)),
+									const SizedBox(height: 10),
+									_builderCapacityRow(event),
 									const SizedBox(height: 12),
 									Row(
 										children: [
@@ -87,6 +90,7 @@ class EventDetailScreen extends StatelessWidget {
 			),
 			builder: (ctx) {
 				bool agree = false;
+				bool submitting = false;
 				final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
 				return Padding(
 					padding: EdgeInsets.only(bottom: bottomInset),
@@ -110,27 +114,10 @@ class EventDetailScreen extends StatelessWidget {
 										const SizedBox(height: 4),
 										Text(event.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54)),
 										const SizedBox(height: 16),
-										TextFormField(
-											decoration: const InputDecoration(
-												labelText: 'Full Name',
-												border: UnderlineInputBorder(),
-												isDense: true,
-											),
-										),
-										const SizedBox(height: 12),
-										TextFormField(
-											keyboardType: TextInputType.emailAddress,
-											decoration: const InputDecoration(
-												labelText: 'Email Address',
-												border: UnderlineInputBorder(),
-												isDense: true,
-											),
-										),
-										const SizedBox(height: 12),
 										Row(
 											children: [
 												Checkbox(value: agree, onChanged: (v) => setState(() => agree = v ?? false)),
-												const Expanded(child: Text('I agree to the Terms and Privacy Policy.')),
+												const Expanded(child: Text('Tôi đồng ý với Điều khoản và Chính sách.')),
 											],
 										),
 										const SizedBox(height: 8),
@@ -138,17 +125,51 @@ class EventDetailScreen extends StatelessWidget {
 											width: double.infinity,
 											height: 48,
 											child: FilledButton(
-												onPressed: agree
-													? () {
-														RegistrationStore.instance.register(event);
-														Navigator.of(ctx).pop();
-														Navigator.of(context).pushNamed(
-															RegistrationQRScreen.routeName,
-															arguments: {'event': event, 'code': 'REG-${event.id.toUpperCase()}'},
-														);
+												onPressed: agree && !submitting
+													? () async {
+														final eventId = int.tryParse(event.id);
+														if (eventId == null) {
+															ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID sự kiện không hợp lệ')));
+															return;
+														}
+														setState(() => submitting = true);
+														final res = await RegistrationService.instance.registerForEvent(eventId);
+														setState(() => submitting = false);
+														if (res['success'] == true) {
+															final RegistrationModel reg = res['registration'] as RegistrationModel;
+															if (context.mounted) Navigator.of(ctx).pop();
+															if (context.mounted) {
+																Navigator.of(context).pushNamed(
+																	RegistrationQRScreen.routeName,
+																	arguments: {
+																		'event': event,
+																		'code': reg.checkinCode ?? reg.qrCode ?? 'REG-${reg.id}',
+																	},
+																);
+															}
+														} else {
+															final String message = res['message'] ?? 'Đăng ký thất bại';
+															final String type = res['error_type'] ?? 'unknown';
+															if (context.mounted) {
+																showDialog(
+																	context: context,
+																	builder: (_) => AlertDialog(
+																		title: const Text('Không thể đăng ký'),
+																		content: Text(_friendlyRegistrationError(type, message)),
+																		actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))],
+																	),
+																);
+															}
+														}
 													}
 													: null,
-												child: const Text('Confirm Registration'),
+											child: submitting
+												? const SizedBox(
+													width: 20,
+													height: 20,
+													child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+												)
+												: const Text('Xác nhận đăng ký'),
 											),
 										),
 										const SizedBox(height: 8),
@@ -161,4 +182,36 @@ class EventDetailScreen extends StatelessWidget {
 			},
 		);
 	}
+
+	String _friendlyRegistrationError(String type, String message) {
+		switch (type) {
+			case 'email_unverified':
+				return 'Email của bạn chưa xác thực. Vui lòng xác thực email rồi thử lại.';
+			case 'profile_incomplete':
+				return 'Hồ sơ chưa đầy đủ (cần student_code và department_id). Vui lòng cập nhật hồ sơ.';
+			case 'event_full':
+				return 'Sự kiện đã hết chỗ.';
+			case 'already_registered':
+				return 'Bạn đã đăng ký sự kiện này.';
+			default:
+				return message;
+		}
+	}
+}
+
+Widget _builderCapacityRow(EventModel event) {
+	final int capacity = event.maxAttendees ?? 0;
+	final int taken = event.currentAttendees ?? 0;
+	final int left = (capacity - taken) < 0 ? 0 : (capacity - taken);
+	return Row(
+		children: [
+			const Icon(Icons.people, color: Colors.white70, size: 16),
+			const SizedBox(width: 6),
+			Text('Capacity: $capacity', style: const TextStyle(color: Colors.white70)),
+			const SizedBox(width: 12),
+			const Icon(Icons.event_seat, color: Colors.white70, size: 16),
+			const SizedBox(width: 6),
+			Text('Seats left: $left', style: const TextStyle(color: Colors.white70)),
+		],
+	);
 }

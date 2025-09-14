@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../state/organizer_store.dart';
 import '../../../models/event.dart';
 import '../../events/event_detail_screen.dart';
 import '../../events/registration_qr_screen.dart';
+import '../../organizer/registrants_screen.dart';
 
 class OrganizerDashboard extends StatefulWidget {
   static const String routeName = '/organizer';
@@ -13,8 +15,16 @@ class OrganizerDashboard extends StatefulWidget {
 }
 
 class _OrganizerDashboardState extends State<OrganizerDashboard> {
-  final OrganizerStore _store = OrganizerStore.instance;
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load data từ API khi khởi tạo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrganizerStore>().loadEvents();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,451 +100,276 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
   }
 
   Widget _buildEventsTab() {
-    return ValueListenableBuilder<List<EventModel>>(
-      valueListenable: _store.events,
-      builder: (context, events, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'My Events',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  Text(
-                    '${events.length} events',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: events.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        itemCount: events.length,
-                        itemBuilder: (context, index) {
-                          final event = events[index];
-                          return _buildEventCard(event);
-                        },
-                      ),
-              ),
-            ],
-          ),
+    return Consumer<OrganizerStore>(
+      builder: (context, organizerStore, child) {
+        if (organizerStore.isLoading.value && organizerStore.events.value.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C63FF)),
+            ),
+          );
+        }
+
+        if (organizerStore.error.value != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: ${organizerStore.error.value}',
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => organizerStore.loadEvents(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (organizerStore.events.value.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: organizerStore.events.value.length,
+          itemBuilder: (context, index) {
+            final event = organizerStore.events.value[index];
+            return _buildEventCard(event, organizerStore);
+          },
         );
       },
     );
   }
 
-  Widget _buildEventCard(EventModel event) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, EventDetailScreen.routeName),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  event.imageAsset,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      event.dateText,
-                      style: const TextStyle(
-                        color: Color(0xFF6C63FF),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.description,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) => _handleEventAction(value, event),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'qr',
-                    child: Row(
-                      children: [
-                        Icon(Icons.qr_code, size: 20),
-                        SizedBox(width: 8),
-                        Text('Generate QR'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-                child: const Icon(Icons.more_vert, color: Colors.grey),
-              ),
-            ],
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.event_note, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No events yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
-        ),
+          SizedBox(height: 8),
+          Text(
+            'Create your first event to get started',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_note,
-            size: 80,
-            color: Colors.grey[300],
+  Widget _buildEventCard(EventModel event, OrganizerStore store) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(
+          context,
+          EventDetailScreen.routeName,
+          arguments: event,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      event.imageAsset,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          event.dateText,
+                          style: const TextStyle(
+                            color: Color(0xFF6C63FF),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (action) => _handleEventAction(action, event),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'qr',
+                        child: Row(
+                          children: [
+                            Icon(Icons.qr_code, size: 20),
+                            SizedBox(width: 8),
+                            Text('QR Code'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'registrants',
+                        child: Row(
+                          children: [
+                            Icon(Icons.people, size: 20),
+                            SizedBox(width: 8),
+                            Text('Registrants'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        RegistrantsScreen.routeName,
+                        arguments: {'event': event},
+                      ),
+                      icon: const Icon(Icons.people, size: 16),
+                      label: const Text('View Registrants'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6C63FF),
+                        side: const BorderSide(color: Color(0xFF6C63FF)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        RegistrationQRScreen.routeName,
+                      ),
+                      icon: const Icon(Icons.qr_code, size: 16),
+                      label: const Text('QR Code'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6C63FF),
+                        side: const BorderSide(color: Color(0xFF6C63FF)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No events yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create your first event to get started',
-            style: TextStyle(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildAttendanceTab() {
-    return ValueListenableBuilder<List<String>>(
-      valueListenable: _store.attendance,
-      builder: (context, attendance, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Attendance',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.pushNamed(
-                      context,
-                      RegistrationQRScreen.routeName,
-                    ),
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Scan QR'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C63FF),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatCard('Total Check-ins', '${attendance.length}', Icons.people),
-                          _buildStatCard('Today', '12', Icons.today),
-                          _buildStatCard('This Week', '45', Icons.calendar_view_week),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Recent Check-ins',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: attendance.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No check-ins yet',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: attendance.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            leading: const CircleAvatar(
-                              backgroundColor: Color(0xFF6C63FF),
-                              child: Icon(Icons.person, color: Colors.white),
-                            ),
-                            title: Text('Student ${attendance[index]}'),
-                            subtitle: Text('Checked in at ${DateTime.now().toString().substring(11, 16)}'),
-                            trailing: const Icon(Icons.check_circle, color: Colors.green),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, size: 32, color: const Color(0xFF6C63FF)),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMediaTab() {
-    return ValueListenableBuilder<List<String>>(
-      valueListenable: _store.mediaAssets,
-      builder: (context, mediaAssets, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Media Gallery',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddMediaDialog(context),
-                    icon: const Icon(Icons.add_photo_alternate),
-                    label: const Text('Add Media'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C63FF),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: mediaAssets.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No media files yet',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1,
-                        ),
-                        itemCount: mediaAssets.length,
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              mediaAssets[index],
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAnalyticsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return const Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Analytics',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
+          Icon(Icons.people, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Attendance Management',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.3,
-              children: [
-                _buildAnalyticsCard(
-                  'Total Events',
-                  '5',
-                  Icons.event,
-                  const Color(0xFF6C63FF),
-                ),
-                _buildAnalyticsCard(
-                  'Total Attendees',
-                  '234',
-                  Icons.people,
-                  const Color(0xFF4CAF50),
-                ),
-                _buildAnalyticsCard(
-                  'Active Events',
-                  '2',
-                  Icons.event_available,
-                  const Color(0xFFFF9800),
-                ),
-                _buildAnalyticsCard(
-                  'Media Files',
-                  '12',
-                  Icons.photo_library,
-                  const Color(0xFF9C27B0),
-                ),
-              ],
-            ),
+          SizedBox(height: 8),
+          Text(
+            'Track event attendance here',
+            style: TextStyle(color: Colors.grey),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 28, color: color),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+  Widget _buildMediaTab() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.photo_library, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Media Gallery',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Manage event media here',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsTab() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.analytics, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Analytics',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'View event analytics here',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
@@ -546,6 +381,13 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
         break;
       case 'qr':
         Navigator.pushNamed(context, RegistrationQRScreen.routeName);
+        break;
+      case 'registrants':
+        Navigator.pushNamed(
+          context,
+          RegistrantsScreen.routeName,
+          arguments: {'event': event},
+        );
         break;
       case 'delete':
         _showDeleteConfirmation(context, event);
@@ -612,34 +454,11 @@ class _OrganizerDashboardState extends State<OrganizerDashboard> {
           ),
           ElevatedButton(
             onPressed: () {
-              _store.deleteEvent(event.id);
+              context.read<OrganizerStore>().deleteEvent(event.id);
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddMediaDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Media'),
-        content: const Text('Media upload functionality will be implemented here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement media upload
-            },
-            child: const Text('Add'),
           ),
         ],
       ),

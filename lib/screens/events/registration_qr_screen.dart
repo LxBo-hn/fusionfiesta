@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/event.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class RegistrationQRScreen extends StatelessWidget {
 	static const String routeName = '/registration-qr';
@@ -7,9 +8,12 @@ class RegistrationQRScreen extends StatelessWidget {
 
 	@override
 	Widget build(BuildContext context) {
-		final Map args = (ModalRoute.of(context)?.settings.arguments as Map?) ?? <String, dynamic>{};
-		final EventModel event = args['event'] as EventModel;
-		final String code = args['code'] as String? ?? 'REG-${DateTime.now().millisecondsSinceEpoch}';
+		final Object? rawArgs = ModalRoute.of(context)?.settings.arguments;
+		final Map<String, dynamic> args = rawArgs is Map<String, dynamic> ? rawArgs : <String, dynamic>{};
+		final EventModel? event = args['event'] is EventModel ? args['event'] as EventModel : null;
+		final String code = args['code'] is String && (args['code'] as String).isNotEmpty
+			? args['code'] as String
+			: 'REG-${DateTime.now().millisecondsSinceEpoch}';
 		return Scaffold(
 			appBar: AppBar(title: const Text('Check-in QR')),
 			body: SafeArea(
@@ -18,20 +22,15 @@ class RegistrationQRScreen extends StatelessWidget {
 					child: Column(
 						crossAxisAlignment: CrossAxisAlignment.center,
 						children: [
-							Text(event.title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+							Text(event?.title ?? 'Event', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
 							const SizedBox(height: 16),
 							Expanded(
 								child: Center(
-									child: Container(
-										width: 260,
-										height: 260,
-										decoration: BoxDecoration(
-											borderRadius: BorderRadius.circular(16),
-											border: Border.all(color: Colors.black12),
-											color: Colors.white,
-											boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 6))],
-										),
-										child: const Text('QR', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
+									child: QrImageView(
+										data: code,
+										version: QrVersions.auto,
+										size: 260,
+										backgroundColor: Colors.white,
 									),
 								),
 							),

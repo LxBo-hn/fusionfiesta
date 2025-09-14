@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/event.dart';
+import '../../state/organizer_store.dart';
 import 'event_detail_screen.dart';
 
-class EventsListScreen extends StatelessWidget {
+class EventsListScreen extends StatefulWidget {
 	static const String routeName = '/events';
 	const EventsListScreen({super.key});
+
+	@override
+	State<EventsListScreen> createState() => _EventsListScreenState();
+}
+
+class _EventsListScreenState extends State<EventsListScreen> {
+	@override
+	void initState() {
+		super.initState();
+		// Load events when screen initializes
+		WidgetsBinding.instance.addPostFrameCallback((_) {
+			Provider.of<OrganizerStore>(context, listen: false).loadEvents();
+		});
+	}
 
 	@override
 	Widget build(BuildContext context) {
@@ -44,23 +60,53 @@ class EventsListScreen extends StatelessWidget {
 						),
 					),
 					Expanded(
-						child: ListView.separated(
-							padding: const EdgeInsets.all(16),
-							itemCount: 10,
-							separatorBuilder: (_, __) => const SizedBox(height: 12),
-							itemBuilder: (_, i) => GestureDetector(
-								onTap: () {
-									final event = EventModel(
-										id: 'e$i',
-										title: 'Event title #${i + 1}',
-										dateText: '15-03-2024',
-										description: 'We\'re “Thinking Out Loud” here, but picture yourself at LIVE concert! The global sensation is bringing the tour for the first time ever...',
-										imageAsset: 'assets/splash/onboarding_${(i % 4) + 1}.png',
+						child: Consumer<OrganizerStore>(
+							builder: (context, organizerStore, child) {
+								if (organizerStore.isLoading.value) {
+									return const Center(child: CircularProgressIndicator());
+								}
+								
+								if (organizerStore.error.value != null) {
+									return Center(
+										child: Column(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: [
+												Icon(Icons.error, size: 64, color: Colors.red.shade300),
+												const SizedBox(height: 16),
+												Text(
+													organizerStore.error.value!,
+													style: const TextStyle(fontSize: 16),
+													textAlign: TextAlign.center,
+												),
+												const SizedBox(height: 16),
+												ElevatedButton(
+													onPressed: () => organizerStore.loadEvents(),
+													child: const Text('Retry'),
+												),
+											],
+										),
 									);
-									Navigator.of(context).pushNamed(EventDetailScreen.routeName, arguments: event);
-								},
-								child: _EventCard(index: i),
-							),
+								}
+								
+								final events = organizerStore.events.value;
+								if (events.isEmpty) {
+									return const Center(
+										child: Text('No events available'),
+									);
+								}
+								
+								return ListView.separated(
+									padding: const EdgeInsets.all(16),
+									itemCount: events.length,
+									separatorBuilder: (_, __) => const SizedBox(height: 12),
+									itemBuilder: (context, index) => GestureDetector(
+										onTap: () {
+											Navigator.of(context).pushNamed(EventDetailScreen.routeName, arguments: events[index]);
+										},
+										child: _EventCard(event: events[index]),
+									),
+								);
+							},
 						),
 					),
 				],
@@ -70,8 +116,8 @@ class EventsListScreen extends StatelessWidget {
 }
 
 class _EventCard extends StatelessWidget {
-	final int index;
-	const _EventCard({required this.index});
+	final EventModel event;
+	const _EventCard({required this.event});
 
 	@override
 	Widget build(BuildContext context) {
@@ -86,7 +132,13 @@ class _EventCard extends StatelessWidget {
 				children: [
 					ClipRRect(
 						borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), bottomLeft: Radius.circular(16)),
-						child: Container(width: 96, height: double.infinity, color: Colors.grey.shade300, child: const Icon(Icons.image, size: 32)),
+						child: Container(
+							width: 96, 
+							height: double.infinity, 
+							child: event.imageAsset.startsWith('http') 
+								? Image.network(event.imageAsset, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 32))
+								: Image.asset(event.imageAsset, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 32))
+						),
 					),
 					Expanded(
 						child: Padding(
@@ -94,12 +146,12 @@ class _EventCard extends StatelessWidget {
 							child: Column(
 								crossAxisAlignment: CrossAxisAlignment.start,
 								children: [
-									Text('15-03-2024', style: Theme.of(context).textTheme.labelSmall),
+									Text(event.dateText, style: Theme.of(context).textTheme.labelSmall),
 									const SizedBox(height: 4),
-									Text('Event title #${index + 1}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+									Text(event.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
 									const SizedBox(height: 4),
 									Text(
-										'Join us for an electrifying musical evening as FusionFiesta presents awesome events...',
+										event.description,
 										maxLines: 2,
 										overflow: TextOverflow.ellipsis,
 									),
