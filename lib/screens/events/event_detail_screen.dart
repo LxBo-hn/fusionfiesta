@@ -152,11 +152,39 @@ class EventDetailScreen extends StatelessWidget {
 															if (context.mounted) {
 																showDialog(
 																	context: context,
-																	builder: (_) => AlertDialog(
-																		title: const Text('Không thể đăng ký'),
-																		content: Text(_friendlyRegistrationError(type, message)),
-																		actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))],
-																	),
+																	builder: (_) {
+																		final content = _friendlyRegistrationError(type, message);
+																		final actions = <Widget>[
+																			TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng')),
+																		];
+																		if (type == 'profile_incomplete') {
+																			actions.add(
+																				FilledButton(
+																					onPressed: () {
+																						Navigator.pop(context);
+																						Navigator.of(context).pushNamed('/profile');
+																				},
+																					child: const Text('Cập nhật hồ sơ'),
+																				),
+																			);
+																		}
+																		if (type == 'email_unverified') {
+																			actions.add(
+																				FilledButton(
+																					onPressed: () {
+																						Navigator.pop(context);
+																						Navigator.of(context).pushNamed('/email-verification');
+																				},
+																					child: const Text('Xác thực email'),
+																				),
+																			);
+																		}
+																		return AlertDialog(
+																			title: const Text('Không thể đăng ký'),
+																			content: Text(content),
+																			actions: actions,
+																		);
+																	},
 																);
 															}
 														}

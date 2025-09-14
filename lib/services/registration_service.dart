@@ -110,10 +110,21 @@ class RegistrationService extends ChangeNotifier {
       }
     } catch (e) {
       error.value = e.toString();
+      String type = 'unknown';
+      String message = e.toString();
+      // Map known API errors to typed error codes for UI handling
+      if (e is ApiException) {
+        message = e.message;
+        final raw = e.message.toLowerCase();
+        if (raw.contains('profile_incomplete')) type = 'profile_incomplete';
+        else if (raw.contains('email_unverified')) type = 'email_unverified';
+        else if (raw.contains('already_registered')) type = 'already_registered';
+        else if (raw.contains('event_full')) type = 'event_full';
+      }
       return {
         'success': false,
-        'message': e.toString(),
-        'error_type': 'unknown',
+        'message': message,
+        'error_type': type,
       };
     } finally {
       isLoading.value = false;

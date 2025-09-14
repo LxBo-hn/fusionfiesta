@@ -11,12 +11,17 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+  final TextEditingController _otpController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     // Check verification status when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EmailVerificationService>().checkVerificationStatus();
+      final svc = context.read<EmailVerificationService>();
+      svc.checkVerificationStatus();
+      // Auto-send OTP on screen open (new default flow)
+      svc.sendOtp();
     });
   }
 
@@ -68,7 +73,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 Text(
                   verificationService.isEmailVerified 
                       ? 'Email Verified!'
-                      : 'Verify Your Email',
+                      : 'Enter OTP from Email',
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -82,7 +87,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 Text(
                   verificationService.isEmailVerified
                       ? 'Your email has been successfully verified. You can now access all features of the app.'
-                      : 'We\'ve sent a verification link to your email address. Please check your inbox and click the link to verify your email.',
+                      : 'A 6-digit OTP has been sent to your email. Enter it below to verify.',
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
@@ -135,8 +140,86 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   ),
                 const SizedBox(height: 32),
                 
-                // Action buttons
+                // Action: OTP flow (recommended for mobile)
                 if (!verificationService.isEmailVerified) ...[
+                  // OTP input
+                  TextField(
+                    controller: _otpController,
+                    maxLength: 6,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter 6-digit OTP',
+                      counterText: '',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: verificationService.isLoading
+                              ? null
+                              : () async {
+                                  final res = await verificationService.sendOtp();
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(res['message'] ?? ''),
+                                      backgroundColor: res['success'] ? Colors.green : Colors.red,
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6C63FF),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: verificationService.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text('Send OTP'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: verificationService.isLoading
+                              ? null
+                              : () async {
+                                  final code = _otpController.text.trim();
+                                  if (code.length != 6) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please enter a 6-digit code')),
+                                    );
+                                    return;
+                                  }
+                                  final res = await verificationService.verifyOtp(code);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(res['message'] ?? ''),
+                                      backgroundColor: res['success'] ? Colors.green : Colors.red,
+                                    ),
+                                  );
+                                },
+                          child: verificationService.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Verify OTP'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  // Resend verification link (optional)
                   // Resend verification email button
                   SizedBox(
                     width: double.infinity,

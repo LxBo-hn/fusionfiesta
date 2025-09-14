@@ -50,7 +50,19 @@ class RegistrationModel {
   // Convenience getters
   String get userName => user?['name'] ?? 'Unknown User';
   String get userEmail => user?['email'] ?? '';
-  String get eventTitle => event?['title'] ?? 'Unknown Event';
+  String get eventTitle {
+    // Try typical keys on embedded event
+    final dynamic fromEvent = event?['title'] ?? event?['name'] ?? event?['event_title'] ?? event?['eventName'];
+    if (fromEvent is String && fromEvent.trim().isNotEmpty) return fromEvent;
+    // Try snapshot payload
+    if (fieldsSnapshot is Map<String, dynamic>) {
+      final snap = fieldsSnapshot as Map<String, dynamic>;
+      final dynamic fromSnap = snap['event_title'] ?? snap['title'] ?? (snap['event'] is Map ? (snap['event'] as Map)['title'] : null);
+      if (fromSnap is String && fromSnap.trim().isNotEmpty) return fromSnap;
+    }
+    // Fallback to event id for better UX than 'Unknown'
+    return 'Event #$eventId';
+  }
   String get formattedRegisteredDate => registeredAt?.toIso8601String().split('T')[0] ?? '';
   String get formattedApprovedDate => approvedAt?.toIso8601String().split('T')[0] ?? '';
   

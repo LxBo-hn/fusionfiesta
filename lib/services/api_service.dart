@@ -280,6 +280,7 @@ class ApiService {
   
   // Email verification endpoints
   Future<Map<String, dynamic>> sendEmailVerification() async {
+    // Deprecated: link-based by default. Backend now sends OTP when hitting notification endpoint.
     return await post('/email/verification/send', {});
   }
   
@@ -287,6 +288,22 @@ class ApiService {
     // For email verification, we typically handle this via web view or deep link
     // This endpoint would be called when user clicks verification link
     return await get(verificationUrl.replaceFirst(baseUrl, ''));
+  }
+
+  // Email verification via OTP (recommended for mobile)
+  Future<Map<String, dynamic>> sendEmailVerificationNotification() async {
+    // New default: server will send OTP instead of link
+    return await post('/auth/email/verification-notification', {});
+  }
+
+  Future<Map<String, dynamic>> sendEmailOtp() async {
+    return await post('/auth/email/otp', {});
+  }
+
+  Future<Map<String, dynamic>> verifyEmailOtp(String code) async {
+    return await post('/auth/email/verify-otp', {
+      'code': code,
+    });
   }
   
   // Feedback endpoints
