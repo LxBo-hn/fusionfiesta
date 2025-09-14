@@ -156,16 +156,34 @@ class _MyRegistrationsTab extends StatelessWidget {
 	}
 }
 
-class _CertificatesTab extends StatelessWidget {
+class _CertificatesTab extends StatefulWidget {
 	const _CertificatesTab();
+
+	@override
+	State<_CertificatesTab> createState() => _CertificatesTabState();
+}
+
+class _CertificatesTabState extends State<_CertificatesTab> {
+	bool _initialized = false;
+
+	@override
+	void initState() {
+		super.initState();
+		WidgetsBinding.instance.addPostFrameCallback((_) {
+			if (!_initialized) {
+				_initialized = true;
+				CertificatesStore.instance.loadCertificates(refresh: true);
+			}
+		});
+	}
+
 	@override
 	Widget build(BuildContext context) {
     return SafeArea(
       child: ValueListenableBuilder<List<CertificateModel>>(
         valueListenable: CertificatesStore.instance.certificates,
         builder: (context, items, _) {
-          if (items.isEmpty) {
-            CertificatesStore.instance.loadCertificates(refresh: true);
+          if (items.isEmpty && CertificatesStore.instance.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
           return SingleChildScrollView(

@@ -4,6 +4,7 @@ import 'role_selection_screen.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../dashboards/student/student_dashboard.dart';
+import 'email_verification_screen.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -43,7 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       
       if (result['success']) {
-        // Login successful
+        // After login, we may need to enforce email verification
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final user = authService.currentUser;
+        final isVerified = (user?['email_verified_at'] != null);
+        if (!isVerified) {
+          Navigator.of(context).pushReplacementNamed(EmailVerificationScreen.routeName);
+          return;
+        }
         final role = ModalRoute.of(context)!.settings.arguments as AppRole? ?? AppRole.student;
         switch (role) {
           case AppRole.student:
@@ -52,9 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
           case AppRole.organizer:
             Navigator.of(context).pushReplacementNamed('/organizer');
             break;
-          // case AppRole.admin:
-          //   Navigator.of(context).pushReplacementNamed('/admin');
-          //   break;
         }
       } else {
         // Login failed

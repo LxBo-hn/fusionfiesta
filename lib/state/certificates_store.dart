@@ -28,8 +28,23 @@ class CertificatesStore extends ChangeNotifier {
 			final response = await _apiService.getMyCertificates(page: _currentPage);
 			
 			if (response['data'] != null) {
-				final List<dynamic> certificatesData = response['data'];
-				final newCertificates = certificatesData
+				// Support both shapes:
+				// 1) { data: [ ... ] }
+				// 2) { data: { data: [ ... ], current_page, last_page, ... } }
+				final dynamic dataField = response['data'];
+				List<dynamic> listJson;
+				int? currentPage;
+				int? lastPage;
+				if (dataField is List) {
+					listJson = dataField;
+				} else if (dataField is Map<String, dynamic>) {
+					listJson = (dataField['data'] as List?) ?? <dynamic>[];
+					currentPage = (dataField['current_page'] as num?)?.toInt();
+					lastPage = (dataField['last_page'] as num?)?.toInt();
+				} else {
+					listJson = <dynamic>[];
+				}
+				final newCertificates = listJson
 					.map((json) => CertificateModel.fromJson(json))
 					.toList();
 				
@@ -39,8 +54,14 @@ class CertificatesStore extends ChangeNotifier {
 					certificates.value = [...certificates.value, ...newCertificates];
 				}
 				
-				// Check if there are more pages
-				hasMorePages.value = response['next_page_url'] != null;
+				// Determine pagination
+				if (response.containsKey('next_page_url')) {
+					hasMorePages.value = response['next_page_url'] != null;
+				} else if (currentPage != null && lastPage != null) {
+					hasMorePages.value = currentPage < lastPage;
+				} else {
+					hasMorePages.value = false;
+				}
 				_currentPage++;
 			} else {
 				error.value = 'Failed to load certificates';

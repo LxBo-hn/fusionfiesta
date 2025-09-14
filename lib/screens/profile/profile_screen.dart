@@ -235,6 +235,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 
                 if (profile.detail?.studentCode != null)
                   _buildInfoRow('Student Code', profile.detail!.studentCode!),
+                if (profile.detail?.departmentId != null)
+                  _buildInfoRow('Department', profile.detail!.departmentId!.toString()),
                 if (profile.detail?.phone != null)
                   _buildInfoRow('Phone', profile.detail!.phone!),
                 if (profile.detail?.dob != null)
@@ -433,6 +435,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _studentCodeController = TextEditingController();
+  int? _selectedDepartmentId;
   String? _selectedGender;
   DateTime? _selectedDob;
 
@@ -442,6 +445,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
     _nameController.text = widget.profile.name;
     _phoneController.text = widget.profile.detail?.phone ?? '';
     _studentCodeController.text = widget.profile.detail?.studentCode ?? '';
+    _selectedDepartmentId = widget.profile.detail?.departmentId;
     _selectedGender = widget.profile.detail?.gender;
     _selectedDob = widget.profile.detail?.dob;
   }
@@ -477,6 +481,22 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: _selectedDepartmentId,
+                decoration: const InputDecoration(
+                  labelText: 'Department',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('Khoa Công nghệ thông tin')),
+                  DropdownMenuItem(value: 2, child: Text('Khoa Kinh tế')),
+                  DropdownMenuItem(value: 3, child: Text('Khoa Ngoại ngữ')),
+                  DropdownMenuItem(value: 4, child: Text('Khoa Khoa học xã hội')),
+                  DropdownMenuItem(value: 5, child: Text('Khác')),
+                ],
+                onChanged: (value) => setState(() => _selectedDepartmentId = value),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -558,6 +578,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         studentCode: _studentCodeController.text.trim().isEmpty ? null : _studentCodeController.text.trim(),
+        departmentId: _selectedDepartmentId,
         gender: _selectedGender,
         dob: _selectedDob,
       );

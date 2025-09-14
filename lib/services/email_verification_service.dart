@@ -12,10 +12,14 @@ class EmailVerificationService extends ChangeNotifier {
   
   bool _isEmailVerified = false;
   bool _isVerificationEmailSent = false;
+  bool _isOtpSent = false;
+  bool _isLoading = false;
   String? _verificationStatus;
   
   bool get isEmailVerified => _isEmailVerified;
   bool get isVerificationEmailSent => _isVerificationEmailSent;
+  bool get isOtpSent => _isOtpSent;
+  bool get isLoading => _isLoading;
   String? get verificationStatus => _verificationStatus;
   
   // Send verification email
@@ -45,6 +49,61 @@ class EmailVerificationService extends ChangeNotifier {
     }
   }
   
+  // Send OTP via email (recommended for mobile)
+  Future<Map<String, dynamic>> sendOtp() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      // Prefer the new notification endpoint which now sends OTP by default.
+      Map<String, dynamic> response;
+      try {
+        response = await _apiService.sendEmailVerificationNotification();
+      } catch (_) {
+        // Fallback to legacy explicit OTP endpoint
+        response = await _apiService.sendEmailOtp();
+      }
+      if (response['message'] == 'otp_sent') {
+        _isOtpSent = true;
+        _verificationStatus = 'OTP has been sent to your email.';
+        return {'success': true, 'message': _verificationStatus};
+      }
+      _verificationStatus = response['message'] ?? 'Failed to send OTP.';
+      return {'success': false, 'message': _verificationStatus};
+    } catch (e) {
+      _verificationStatus = 'Error: ${e.toString()}';
+      return {'success': false, 'message': _verificationStatus};
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Verify OTP code
+  Future<Map<String, dynamic>> verifyOtp(String code) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+      final response = await _apiService.verifyEmailOtp(code);
+      if (response['message'] == 'verified') {
+        _isEmailVerified = true;
+        _verificationStatus = 'Email verified successfully!';
+        // Sync profile status from server
+        try {
+          await _apiService.getMe();
+        } catch (_) {}
+        return {'success': true, 'message': _verificationStatus};
+      }
+      _verificationStatus = response['message'] ?? 'Invalid OTP.';
+      return {'success': false, 'message': _verificationStatus};
+    } catch (e) {
+      _verificationStatus = 'Error: ${e.toString()}';
+      return {'success': false, 'message': _verificationStatus};
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Handle verification link (when user clicks email link)
   Future<Map<String, dynamic>> handleVerificationLink(String verificationUrl) async {
     try {
@@ -105,6 +164,8 @@ class EmailVerificationService extends ChangeNotifier {
   void reset() {
     _isEmailVerified = false;
     _isVerificationEmailSent = false;
+    _isOtpSent = false;
+    _isLoading = false;
     _verificationStatus = null;
     notifyListeners();
   }
