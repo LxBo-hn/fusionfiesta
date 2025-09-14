@@ -231,10 +231,18 @@ class ApiService {
   }
   
   Future<Map<String, dynamic>> checkIn(String eventId, String checkinCode) async {
-    return await post('/attendance/checkin', {
-      'event_id': int.parse(eventId),
-      'checkin_code': checkinCode,
-    });
+    print('🔍 CheckIn API Call: event_id=$eventId, checkin_code=$checkinCode');
+    try {
+      final result = await post('/attendance/checkin', {
+        'event_id': int.parse(eventId),
+        'checkin_code': checkinCode,
+      });
+      print('🔍 CheckIn API Response: $result');
+      return result;
+    } catch (e) {
+      print('🔍 CheckIn API Error: $e');
+      rethrow;
+    }
   }
   
   // Approval endpoints

@@ -17,6 +17,8 @@ import '../screens/notifications/notifications_screen.dart';
 import '../screens/organizer/registrants_screen.dart';
 import '../screens/organizer/create_event_screen.dart';
 import '../screens/organizer/edit_event_screen.dart';
+import '../screens/organizer/qr_scanner_screen.dart';
+import '../screens/organizer/qr_generator_screen.dart';
 import '../models/api_event.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/registrations/my_registrations_screen.dart';
@@ -89,6 +91,26 @@ class AppRoutes {
 				);
 			}
 			return EditEventScreen(event: event);
+		},
+		QRScannerScreen.routeName: (context) {
+			final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+			final event = args?['event'] as EventModel?;
+			if (event == null) {
+				return const Scaffold(
+					body: Center(child: Text('Event not found')),
+				);
+			}
+			return QRScannerScreen(event: event);
+		},
+		QRGeneratorScreen.routeName: (context) {
+			final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+			final event = args?['event'] as EventModel?;
+			if (event == null) {
+				return const Scaffold(
+					body: Center(child: Text('Event not found')),
+				);
+			}
+			return QRGeneratorScreen(event: event);
 		},
 	};
 }
