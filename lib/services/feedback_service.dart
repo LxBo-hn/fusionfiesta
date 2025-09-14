@@ -22,12 +22,28 @@ class FeedbackService extends ChangeNotifier {
   }
   
   // Submit feedback for an event
-  Future<bool> submitFeedback(int eventId, int rating, {String? comment}) async {
+  Future<bool> submitFeedback({
+    required int eventId,
+    required int rating,
+    String? comment,
+    int? organizationRating,
+    int? relevanceRating,
+    int? coordinationRating,
+    int? overallExperienceRating,
+  }) async {
     try {
       isLoading.value = true;
       error.value = null;
       
-      final response = await _apiService.submitFeedback(eventId, rating, comment: comment);
+      final response = await _apiService.submitFeedback(
+        eventId, 
+        rating, 
+        comment: comment,
+        organizationRating: organizationRating,
+        relevanceRating: relevanceRating,
+        coordinationRating: coordinationRating,
+        overallExperienceRating: overallExperienceRating,
+      );
       
       if (response['id'] != null) {
         // Update local feedback

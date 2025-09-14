@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/event.dart';
 import '../../models/registration.dart';
 import '../../services/registration_service.dart';
+import '../../widgets/success_notification.dart';
 import 'registration_qr_screen.dart';
 
 class EventDetailScreen extends StatelessWidget {
@@ -56,6 +57,22 @@ class EventDetailScreen extends StatelessWidget {
 													_showRegisterSheet(context, event);
 												},
 												child: const Text('Register'),
+											),
+											const SizedBox(width: 10),
+											OutlinedButton(
+												style: OutlinedButton.styleFrom(
+													foregroundColor: Colors.white70,
+													side: const BorderSide(color: Colors.white38),
+													shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+													padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+												),
+												onPressed: () {
+													Navigator.of(context).pushNamed(
+														'/event-feedback',
+														arguments: event,
+													);
+												},
+												child: const Text('Đánh giá'),
 											),
 											const SizedBox(width: 10),
 											OutlinedButton(
@@ -137,12 +154,22 @@ class EventDetailScreen extends StatelessWidget {
 														if (res['success'] == true) {
 															final RegistrationModel reg = res['registration'] as RegistrationModel;
 															if (context.mounted) Navigator.of(ctx).pop();
+															
+															// Show success notification
 															if (context.mounted) {
-																Navigator.of(context).pushNamed(
-																	RegistrationQRScreen.routeName,
-																	arguments: {
-																		'event': event,
-																		'code': reg.checkinCode ?? reg.qrCode ?? 'REG-${reg.id}',
+																SuccessNotification.show(
+																	context: context,
+																	title: '🎉 Đăng ký thành công!',
+																	message: 'Bạn đã đăng ký tham gia sự kiện "${event.title}" thành công. Mã QR của bạn đã được tạo.',
+																	onDismiss: () {
+																		// Navigate to QR screen after notification
+																		Navigator.of(context).pushNamed(
+																			RegistrationQRScreen.routeName,
+																			arguments: {
+																				'event': event,
+																				'code': reg.checkinCode ?? reg.qrCode ?? 'REG-${reg.id}',
+																			},
+																		);
 																	},
 																);
 															}

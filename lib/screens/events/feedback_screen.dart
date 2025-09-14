@@ -276,8 +276,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     setState(() => _isSubmitting = true);
     
     final success = await feedbackService.submitFeedback(
-      int.parse(widget.event.id),
-      _selectedRating,
+      eventId: int.parse(widget.event.id),
+      rating: _selectedRating,
       comment: _commentController.text.trim().isEmpty 
           ? null 
           : _commentController.text.trim(),

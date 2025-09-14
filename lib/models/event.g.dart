@@ -24,6 +24,10 @@ EventModel _$EventModelFromJson(Map<String, dynamic> json) => EventModel(
   currentAttendees: (json['currentAttendees'] as num?)?.toInt(),
   location: json['location'] as String?,
   category: json['category'] as String?,
+  startAt: json['startAt'] == null
+      ? null
+      : DateTime.parse(json['startAt'] as String),
+  endAt: json['endAt'] == null ? null : DateTime.parse(json['endAt'] as String),
 );
 
 Map<String, dynamic> _$EventModelToJson(EventModel instance) =>
@@ -41,4 +45,6 @@ Map<String, dynamic> _$EventModelToJson(EventModel instance) =>
       'currentAttendees': instance.currentAttendees,
       'location': instance.location,
       'category': instance.category,
+      'startAt': instance.startAt?.toIso8601String(),
+      'endAt': instance.endAt?.toIso8601String(),
     };

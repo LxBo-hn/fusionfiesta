@@ -307,11 +307,36 @@ class ApiService {
   }
   
   // Feedback endpoints
-  Future<Map<String, dynamic>> submitFeedback(int eventId, int rating, {String? comment}) async {
-    return await post('/events/$eventId/feedback', {
+  Future<Map<String, dynamic>> submitFeedback(
+    int eventId, 
+    int rating, {
+    String? comment,
+    int? organizationRating,
+    int? relevanceRating,
+    int? coordinationRating,
+    int? overallExperienceRating,
+  }) async {
+    final data = <String, dynamic>{
       'rating': rating,
-      if (comment != null && comment.isNotEmpty) 'comment': comment,
-    });
+    };
+    
+    if (comment != null && comment.isNotEmpty) {
+      data['comment'] = comment;
+    }
+    if (organizationRating != null) {
+      data['organization_rating'] = organizationRating;
+    }
+    if (relevanceRating != null) {
+      data['relevance_rating'] = relevanceRating;
+    }
+    if (coordinationRating != null) {
+      data['coordination_rating'] = coordinationRating;
+    }
+    if (overallExperienceRating != null) {
+      data['overall_experience_rating'] = overallExperienceRating;
+    }
+    
+    return await post('/events/$eventId/feedback', data);
   }
   
   Future<Map<String, dynamic>> getEventFeedback(int eventId) async {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../state/organizer_store.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/success_notification.dart';
 
 class CreateEventScreen extends StatefulWidget {
   static const String routeName = '/create-event';
@@ -717,21 +718,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _showSuccessDialog() {
-    showDialog(
+    SuccessNotification.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thành công'),
-        content: const Text('Sự kiện đã được tạo thành công!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to organizer dashboard
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+      title: '🎉 Tạo sự kiện thành công!',
+      message: 'Sự kiện "${_titleController.text}" đã được tạo thành công và đang chờ phê duyệt từ quản trị viên.',
+      onDismiss: () {
+        Navigator.pop(context); // Go back to organizer dashboard
+      },
     );
   }
 }

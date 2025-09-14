@@ -82,6 +82,8 @@ class ApiEventModel {
       'currentAttendees': capacity - seatsLeft,
       'location': venue ?? 'Location TBD',
       'category': _getCategoryName(),
+      'startAt': startAt.toIso8601String(),
+      'endAt': endAt.toIso8601String(),
     };
   }
 

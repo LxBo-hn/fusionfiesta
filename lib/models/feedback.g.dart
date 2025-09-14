@@ -21,6 +21,11 @@ FeedbackModel _$FeedbackModelFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['updatedAt'] as String),
       user: json['user'] as Map<String, dynamic>?,
       event: json['event'] as Map<String, dynamic>?,
+      organizationRating: (json['organizationRating'] as num?)?.toInt(),
+      relevanceRating: (json['relevanceRating'] as num?)?.toInt(),
+      coordinationRating: (json['coordinationRating'] as num?)?.toInt(),
+      overallExperienceRating: (json['overallExperienceRating'] as num?)
+          ?.toInt(),
     );
 
 Map<String, dynamic> _$FeedbackModelToJson(FeedbackModel instance) =>
@@ -34,4 +39,8 @@ Map<String, dynamic> _$FeedbackModelToJson(FeedbackModel instance) =>
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'user': instance.user,
       'event': instance.event,
+      'organizationRating': instance.organizationRating,
+      'relevanceRating': instance.relevanceRating,
+      'coordinationRating': instance.coordinationRating,
+      'overallExperienceRating': instance.overallExperienceRating,
     };

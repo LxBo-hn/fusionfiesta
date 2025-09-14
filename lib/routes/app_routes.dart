@@ -12,6 +12,7 @@ import '../screens/events/events_list_screen.dart';
 import '../screens/events/event_detail_screen.dart';
 import '../screens/events/registration_qr_screen.dart';
 import '../screens/events/feedback_screen.dart';
+import '../screens/events/event_feedback_screen.dart';
 import '../screens/media/media_gallery_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/organizer/registrants_screen.dart';
@@ -57,6 +58,15 @@ class AppRoutes {
 				);
 			}
 			return FeedbackScreen(event: event);
+		},
+		EventFeedbackScreen.routeName: (context) {
+			final event = ModalRoute.of(context)?.settings.arguments as EventModel?;
+			if (event == null) {
+				return const Scaffold(
+					body: Center(child: Text('Event not found')),
+				);
+			}
+			return EventFeedbackScreen(event: event);
 		},
 		MediaGalleryScreen.routeName: (context) {
 			final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
